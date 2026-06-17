@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#05030a">
+    <meta name="description" content="Heart Sync is a static Three.js particle heart that pulses with simulated or BLE heart-rate data.">
+    <title>Heart Sync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <div id="scene" class="scene-stage" aria-hidden="true"></div>
+      <div class="ambient-layer ambient-layer--halo" aria-hidden="true"></div>
+      <div class="ambient-layer ambient-layer--grain" aria-hidden="true"></div>
+      <div class="ambient-layer ambient-layer--vignette" aria-hidden="true"></div>
+
+      <main class="love-overlay" aria-label="Heart Sync message">
+        <p class="eyebrow">Heart Sync</p>
+        <h1 id="loveTitle" class="love-title--names">
+          <span class="love-name">Lee</span>
+          <span class="love-name">XXX</span>
+        </h1>
+        <p id="loveSubtitle" class="subtitle">Every heartbeat is for you.</p>
+        <div class="anniversary-card" aria-live="polite">
+          <span id="sinceDate">Since 2024-02-14</span>
+          <strong id="daysTogether">Together for 0 days</strong>
+        </div>
+      </main>
+
+      <aside class="sensor-panel" aria-label="Heart rate controls">
+        <div class="sensor-readout">
+          <span class="sensor-label">Pulse</span>
+          <strong><span id="bpmValue">--</span> BPM</strong>
+        </div>
+        <div class="sensor-state">
+          <span id="modeDot" class="mode-dot" aria-hidden="true"></span>
+          <span id="modeText">Waiting for watch</span>
+        </div>
+        <button id="bleButton" class="ble-button" type="button">Connect watch</button>
+      </aside>
+
+      <div id="appError" class="app-error" role="status" hidden></div>
+    </div>
+
+    <noscript>
+      <div class="app-error app-error--static">Heart Sync needs JavaScript enabled to render the particle heart.</div>
+    </noscript>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      if (!window.THREE) {
+        document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');
+      }
+    </script>
+    <script src="js/heart-animation.js"></script>
+    <script src="js/particle-system.js"></script>
+    <script src="js/ble-manager.js"></script>
+    <script src="js/ui-manager.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
