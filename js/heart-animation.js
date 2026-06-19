@@ -13,10 +13,13 @@
       this.defaultBpm = config.defaultBpm || 75;
       this.currentBpm = null;
       this.targetBpm = null;
+      this.smoothedBpm = null;
       this.source = "waiting";
-      this.previousPhase = 0;
       this.lastBeatTime = 0;
+      this.nextBeatTime = null;
+      this._prevPeriod = null;
       this.hasHeartRate = false;
+      this.MIN_BEAT_INTERVAL = 0.28;
     }
 
     setBpm(bpm, source) {
@@ -25,7 +28,15 @@
         return;
       }
 
-      this.targetBpm = clamp(nextBpm, 42, 190);
+      const clamped = clamp(nextBpm, 42, 190);
+
+      if (this.smoothedBpm === null) {
+        this.smoothedBpm = clamped;
+      } else {
+        this.smoothedBpm += (clamped - this.smoothedBpm) * 0.35;
+      }
+
+      this.targetBpm = this.smoothedBpm;
       this.source = source || "ble";
       this.hasHeartRate = this.source === "ble";
 
@@ -38,8 +49,10 @@
       this.source = "waiting";
       this.currentBpm = null;
       this.targetBpm = null;
+      this.smoothedBpm = null;
       this.hasHeartRate = false;
-      this.previousPhase = 0;
+      this.nextBeatTime = null;
+      this._prevPeriod = null;
     }
 
     useSimulation() {
@@ -66,25 +79,43 @@
       this.currentBpm += (this.targetBpm - this.currentBpm) * 0.045;
 
       const period = 60 / this.currentBpm;
-      const phase = (timeSeconds % period) / period;
-      const pulse = this.computePulse(phase, timeSeconds);
-      const energy = clamp((this.currentBpm - 56) / 72, 0, 1);
-      const breath = Math.sin(timeSeconds * 0.32) * 0.01;
-      const isBeat = phase < this.previousPhase;
 
-      if (isBeat) {
-        this.lastBeatTime = timeSeconds;
+      if (this.nextBeatTime === null) {
+        this.nextBeatTime = timeSeconds + period;
+        this._prevPeriod = period;
       }
 
-      this.previousPhase = phase;
+      if (this._prevPeriod !== null && Math.abs(period - this._prevPeriod) > 0.0001) {
+        var timeToNext = Math.max(0, this.nextBeatTime - timeSeconds);
+        var phaseRemaining = timeToNext / this._prevPeriod;
+        this.nextBeatTime = timeSeconds + phaseRemaining * period;
+        this._prevPeriod = period;
+      }
+
+      var isBeat = false;
+      if (timeSeconds >= this.nextBeatTime) {
+        if (timeSeconds - this.lastBeatTime >= this.MIN_BEAT_INTERVAL) {
+          isBeat = true;
+          this.lastBeatTime = timeSeconds;
+        }
+        while (timeSeconds >= this.nextBeatTime) {
+          this.nextBeatTime += period;
+        }
+      }
+
+      var timeIntoCc = timeSeconds - (this.nextBeatTime - period);
+      var phase = clamp(timeIntoCc / period, 0, 1);
+      var pulse = this.computePulse(phase, timeSeconds);
+      var energy = clamp((this.currentBpm - 56) / 72, 0, 1);
+      var breath = Math.sin(timeSeconds * 0.32) * 0.01;
 
       return {
         bpm: this.currentBpm,
-        phase,
-        pulse,
-        isBeat,
+        phase: phase,
+        pulse: pulse,
+        isBeat: isBeat,
         lastBeatTime: this.lastBeatTime,
-        energy,
+        energy: energy,
         scale: 1 + breath + pulse * (0.052 + energy * 0.052),
         glow: 0.42 + energy * 0.34 + pulse * (0.7 + energy * 0.46),
         speed: 0.68 + energy * 1.14 + pulse * 0.34,
